@@ -18,7 +18,7 @@ jobs:
       - name: Configure and build
         shell: pwsh
         run: |
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR=C:/tools/opencv/build
+          cmake -S . -B build -DOpenCV_DIR=C:/tools/opencv/build
           cmake --build build --config Release
 
       - name: Collect exe and DLL
