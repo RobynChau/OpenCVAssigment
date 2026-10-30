@@ -1,0 +1,37 @@
+# Builds FeatureMatcher.exe on a Windows runner (GitHub Actions, free for public
+# and private repos within the monthly quota). Push this folder as the repo root,
+# open the "Actions" tab, run the workflow, then download the "Release" artifact.
+name: build-windows
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCV (prebuilt, via Chocolatey)
+        run: choco install opencv -y --no-progress
+
+      - name: Configure and build
+        shell: pwsh
+        run: |
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR=C:/tools/opencv/build
+          cmake --build build --config Release
+
+      - name: Collect exe and DLL
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force Release | Out-Null
+          Copy-Item build/Release/FeatureMatcher.exe Release/
+          Get-ChildItem C:/tools/opencv/build/x64 -Recurse -Filter "opencv_world*.dll" |
+            Where-Object { $_.Name -notmatch '\d+d\.dll$' } |
+            ForEach-Object { Copy-Item $_.FullName Release/; "Required DLL: $($_.Name)" } |
+            Tee-Object -FilePath Release/dll_found.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Release
+          path: Release/
